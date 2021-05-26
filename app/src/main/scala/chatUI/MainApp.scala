@@ -3,14 +3,13 @@
  */
 package chatUI
 
-import chatUI.model.User
-import chatUI.view.UsersOverviewController
+import chatUI.model.{ChatChannel, ChatTab, TOPIC, User}
+import chatUI.view.ChatController
 import javafx.application.Application
-import javafx.collections.{FXCollections, ListChangeListener, ObservableList}
+import javafx.collections.{FXCollections, ObservableList, ObservableSet}
 import javafx.fxml.FXMLLoader
-import javafx.scene.control.Label
-import javafx.scene.layout.{HBox, VBox}
-import javafx.scene.{Parent, Scene}
+import javafx.scene.layout.HBox
+import javafx.scene.Scene
 import javafx.stage.Stage
 
 
@@ -19,32 +18,20 @@ class MainApp extends Application {
   private var _stage:Stage = _
   private var _appLayout:HBox = _
   private val _usersData:ObservableList[User] = FXCollections.observableArrayList
+  private val _channelsData:ObservableList[ChatChannel] = FXCollections.observableArrayList
+
 
 
   override def start(primaryStage: Stage): Unit = {
-
 
     stage = primaryStage
     stage.setTitle("p2p chat")
 
     initAppLayout()
-    showUsersOverview()
   }
 
 
   override def stop(): Unit = {
-  }
-
-
-  def showUsersOverview(): Unit = {
-    val loader = new FXMLLoader()
-    loader.setLocation(getClass.getResource("view/UsersOverview.fxml"))
-
-
-    val usersOverview:VBox = loader.load
-    appLayout.getChildren.add(usersOverview)
-    val usersOverviewController:UsersOverviewController = loader.getController
-    usersOverviewController.mainApp = this
   }
 
   def initAppLayout(): Unit = {
@@ -55,17 +42,11 @@ class MainApp extends Application {
     appLayout = loader.load
     val scene = new Scene(appLayout)
 
+    val chatController:ChatController = loader.getController
+    chatController.mainApp = this
+
     stage.setScene(scene)
     stage.show()
-    /*
-        usersData.addListener(new ListChangeListener[User] {
-          override def onChanged(c: ListChangeListener.Change[_ <: User]): Unit = {
-            //appLayout.getChildren.add(new Label("asdasd"))
-
-          }
-        })
-
-     * */
 
     usersData.add(new User("user 1"))
     usersData.add(new User("user 2"))
@@ -73,7 +54,9 @@ class MainApp extends Application {
 
 
   // setters/getters
-  def usersData:ObservableList[User] = _usersData
+  def usersData: ObservableList[User] = _usersData
+
+  def channelsData: ObservableList[ChatChannel] = _channelsData
 
   def appLayout: HBox = _appLayout
   def appLayout_=(el:HBox) = _appLayout = el

@@ -16,6 +16,7 @@ class UserCell extends ListCell[User] {
     } else {
       name = (index + 1 + ". " + item.name)
     }
+
     setText(name)
     setGraphic(null)
   }
