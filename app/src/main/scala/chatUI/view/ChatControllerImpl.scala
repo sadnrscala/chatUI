@@ -1,11 +1,11 @@
 package chatUI.view
 
 import chatUI.MainApp
-import chatUI.model.{ChatChannel, ChatTab, TOPIC, WHISPER}
+import chatUI.model.{ChatChannel, ChatTab, Message, TOPIC}
 import javafx.collections.{FXCollections, ListChangeListener, ObservableSet, SetChangeListener}
 import javafx.event.ActionEvent
 import javafx.fxml.FXML
-import javafx.scene.control.Tab
+import javafx.scene.control.{ListView, Tab}
 
 import java.net.URL
 import java.util.ResourceBundle
@@ -16,6 +16,10 @@ class ChatControllerImpl extends ChatController {
   private val _tabsData:ObservableSet[ChatTab] = FXCollections.observableSet()
   def tabsData: ObservableSet[ChatTab] = _tabsData
 
+  @FXML
+  def messageAreaKeyPressed(): Unit = {
+    println("asdsd")
+  }
 
   @FXML
   def joinToChannelButtonHandler(): Unit = {
@@ -67,7 +71,13 @@ class ChatControllerImpl extends ChatController {
     tabsData.addListener(new SetChangeListener[ChatTab] {
       override def onChanged(change: SetChangeListener.Change[_ <: ChatTab]): Unit = {
         if (change.wasAdded) {
-          chatTabsContainer.getTabs.add(new Tab(change.getElementAdded.name))
+          val newTab = new Tab(change.getElementAdded.name)
+          val newTabMessagesContainer = new ListView[Message]
+          val newTabMessagesData = mainApp.messagesData("Main")
+          newTabMessagesContainer.setItems(newTabMessagesData)
+          newTab.setContent(newTabMessagesContainer)
+
+          chatTabsContainer.getTabs.add(newTab)
         }
         if (change.wasRemoved) {
           chatTabsContainer.getTabs.removeIf(_.getText == change.getElementRemoved.name)

@@ -3,7 +3,7 @@
  */
 package chatUI
 
-import chatUI.model.{ChatChannel, ChatTab, TOPIC, User}
+import chatUI.model.{ChatChannel, ChatTab, Message, TOPIC, User}
 import chatUI.view.ChatController
 import javafx.application.Application
 import javafx.collections.{FXCollections, ObservableList, ObservableSet}
@@ -12,6 +12,16 @@ import javafx.scene.layout.HBox
 import javafx.scene.Scene
 import javafx.stage.Stage
 
+import scala.collection.mutable.HashMap
+
+
+
+
+
+
+
+
+
 
 class MainApp extends Application {
 
@@ -19,7 +29,7 @@ class MainApp extends Application {
   private var _appLayout:HBox = _
   private val _usersData:ObservableList[User] = FXCollections.observableArrayList
   private val _channelsData:ObservableList[ChatChannel] = FXCollections.observableArrayList
-
+  private var _messagesData:HashMap[String, ObservableList[Message]] = new HashMap[String, ObservableList[Message]]()
 
 
   override def start(primaryStage: Stage): Unit = {
@@ -50,12 +60,15 @@ class MainApp extends Application {
 
     usersData.add(new User("user 1"))
     usersData.add(new User("user 2"))
+
+    messagesData.addOne("Main", FXCollections.observableArrayList())
+    messagesData("Main").add(new Message("privet", new User("asadasd")))
   }
 
 
   // setters/getters
   def usersData: ObservableList[User] = _usersData
-
+  def messagesData: HashMap[String, ObservableList[Message]] = _messagesData
   def channelsData: ObservableList[ChatChannel] = _channelsData
 
   def appLayout: HBox = _appLayout
