@@ -1,3 +1,9 @@
 .root {
-    -fx-background: #555666;
+   // -fx-background: #555666;
+}
+.message__owner {
+    -fx-text-fill: red;
+}
+.label-error {
+    -fx-text-fill: #EE5454;
 }

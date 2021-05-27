@@ -55,7 +55,7 @@
                   <Insets bottom="10.0" left="10.0" top="10.0" />
                </VBox.margin>
             </Label>
-            <TextArea onKeyPressed="#messageAreaKeyPressed" prefHeight="150.0" />
+            <TextArea fx:id="messageArea" onKeyPressed="#messageAreaKeyPressed" prefHeight="150.0" />
             <Button fx:id="testButton" mnemonicParsing="false" text="Test button">
                <VBox.margin>
                   <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
@@ -78,13 +78,15 @@
                               <RowConstraints />
                               <RowConstraints vgrow="SOMETIMES" />
                               <RowConstraints vgrow="SOMETIMES" />
+                              <RowConstraints vgrow="SOMETIMES" />
                            </rowConstraints>
                            <children>
                               <Label text="IP-addr" />
                               <Label text="Port" GridPane.columnIndex="1" />
-                              <TextField promptText="192.168.0.1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" />
-                              <TextField maxWidth="50.0" promptText="3306" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                              <Button maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" mnemonicParsing="false" text="connect" GridPane.columnSpan="2" GridPane.rowIndex="2" GridPane.vgrow="ALWAYS" />
+                              <TextField onKeyReleased="#connectAddressTextFieldOnKeyReleased" fx:id="connectAddressTextField" promptText="192.168.0.1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" />
+                              <TextField onKeyReleased="#connectPortTextFieldOnKeyReleased" fx:id="connectPortTextField" maxWidth="50.0" promptText="3306" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                              <Button onAction="#connectButtonOnAction" fx:id="connectButton" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" mnemonicParsing="false" text="connect" GridPane.columnSpan="2" GridPane.rowIndex="2" GridPane.vgrow="ALWAYS" />
+                              <Label styleClass="label-error" visible="false" fx:id="connectionErrorLabel" text="Invalid host or port format" GridPane.columnSpan="2" GridPane.rowIndex="3" />
                            </children>
                            <opaqueInsets>
                               <Insets />
