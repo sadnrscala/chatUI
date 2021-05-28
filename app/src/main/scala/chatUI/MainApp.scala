@@ -6,10 +6,10 @@ package chatUI
 
 
 import akka.actor.typed.ActorSystem
-import chatUI.ActorUI.SetController
-import chatUI.App.{RootBehavior, config}
+
 import chatUI.model.{ChatChannel, Message, User}
 import chatUI.view.ChatController
+import com.typesafe.config.ConfigFactory
 import javafx.application.Application
 import javafx.collections.{FXCollections, ObservableList}
 import javafx.fxml.FXMLLoader
@@ -33,6 +33,7 @@ class MainApp extends Application {
   private val _usersData:ObservableList[User] = FXCollections.observableArrayList
   private val _channelsData:ObservableList[ChatChannel] = FXCollections.observableArrayList
 
+  var system:ActorSystem[ChatGuardian.ChatCommand] = _
 
 
 
@@ -54,7 +55,7 @@ class MainApp extends Application {
    * When GUI stop, terminate ActorSystems
    * */
   override def stop(): Unit = {
-    App.localSystem.terminate()
+    system.terminate()
   }
 
   def initAppLayout(): Unit = {
@@ -67,8 +68,8 @@ class MainApp extends Application {
 
     val chatController:ChatController = loader.getController
     chatController.mainApp = this
-    App.localSystem ! SetController(chatController)
-    val clusterActorSystem: ActorSystem[Nothing] = ActorSystem[Nothing](RootBehavior(), "ClusterSystem", config)
+    system = ActorSystem(ChatGuardian(chatController), "ClusterChat", ConfigFactory.load("application.cluster.conf"))
+
 
     stage.setScene(scene)
     stage.show()

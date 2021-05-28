@@ -25,4 +25,6 @@ abstract class ChatController extends Initializable {
 
   def mainApp: MainApp
   def mainApp_=(c: MainApp): Unit
+
+  def foo = println("asdasd")
 }

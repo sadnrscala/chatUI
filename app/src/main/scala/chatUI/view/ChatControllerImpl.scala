@@ -1,7 +1,10 @@
 package chatUI.view
 
-import chatUI.MainApp
+import akka.actor.Address
+import akka.actor.typed.ActorSystem
+import chatUI.{ChatGuardian, MainApp}
 import chatUI.model.{ChatChannel, ChatTab, Message, TOPIC, User}
+import com.typesafe.config.ConfigFactory
 import javafx.beans.property.{BooleanProperty, IntegerProperty, SimpleBooleanProperty, SimpleIntegerProperty, SimpleObjectProperty, SimpleStringProperty, StringProperty}
 import javafx.beans.value.{ChangeListener, ObservableBooleanValue, ObservableObjectValue}
 import javafx.collections.{FXCollections, ListChangeListener, ObservableSet, SetChangeListener}
@@ -78,10 +81,10 @@ class ChatControllerImpl extends ChatController {
   def connectButtonOnAction(e: ActionEvent): Unit = {
     connectionErrorLabel.setVisible(false)
     var formValid = true
-    val address = connectionAddress.trim
+    val host = connectionAddress.trim
     val port = connectionPort.trim
 
-    if ( ! address.matches(
+    if ( ! host.matches(
       "^" +
               "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}" +
               "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)" +
@@ -95,6 +98,9 @@ class ChatControllerImpl extends ChatController {
 
     if (formValid) {
       println("connection")
+      val address: Address = new Address("akka", "ClusterChat", host, port.toInt)
+      mainApp.system.terminate()
+      mainApp.system = ActorSystem(ChatGuardian(this, address), "ClusterChat", ConfigFactory.load("application.cluster.conf"))
     } else {
       connectionErrorLabel.setVisible(true)
     }

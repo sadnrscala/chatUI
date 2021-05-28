@@ -1,20 +1,15 @@
 package chatUI
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.ClusterEvent.MemberEvent
-import akka.cluster.ClusterEvent.MemberRemoved
-import akka.cluster.ClusterEvent.MemberUp
-import akka.cluster.ClusterEvent.ReachabilityEvent
-import akka.cluster.ClusterEvent.ReachableMember
-import akka.cluster.ClusterEvent.UnreachableMember
-import akka.cluster.typed.Cluster
-import akka.cluster.typed.Subscribe
-import chatUI.ActorUI.UpdateCurrentMembers
+import akka.cluster.ClusterEvent.{MemberEvent, MemberRemoved, MemberUp, ReachabilityEvent, ReachableMember, UnreachableMember}
+import akka.cluster.{Member, MemberStatus}
+import akka.cluster.typed.{Cluster, Subscribe}
+import chatUI.model.User
+import chatUI.view.ChatController
+import javafx.application.Platform
 
-
-
+import scala.collection.immutable.SortedSet
 
 object ClusterListener {
 
@@ -24,7 +19,7 @@ object ClusterListener {
   private final case class MemberChange(event: MemberEvent) extends Event
 
 
-  def apply(): Behavior[Event] = Behaviors.setup { ctx =>
+  def apply(controller:ChatController): Behavior[Event] = Behaviors.setup { ctx =>
 
     val memberEventAdapter: ActorRef[MemberEvent] = ctx.messageAdapter(MemberChange)
     Cluster(ctx.system).subscriptions ! Subscribe(memberEventAdapter, classOf[MemberEvent])
@@ -32,6 +27,19 @@ object ClusterListener {
 
     val reachabilityAdapter = ctx.messageAdapter(ReachabilityChange)
     Cluster(ctx.system).subscriptions ! Subscribe(reachabilityAdapter, classOf[ReachabilityEvent])
+
+    def updateMembers(members: SortedSet[Member]) = {
+      Platform.runLater({() =>
+        val usersData = controller.mainApp.usersData
+        usersData.removeAll(usersData)
+
+        members filter { member =>
+          member.status == MemberStatus.Up || member.status == MemberStatus.Joining
+        } foreach { m =>
+          usersData.add(new User(s"${m.address.host.get}: ${m.address.port.get}"))
+        }
+      })
+  }
 
     Behaviors.receiveMessage { message =>
       message match {
@@ -47,20 +55,19 @@ object ClusterListener {
         case MemberChange(changeEvent) =>
           changeEvent match {
             case MemberUp(member) =>
-
-              val members = Cluster(ctx.system).state.members
-              App.localSystem ! UpdateCurrentMembers(members)
-
               ctx.log.info("Member is Up: {}", member.address)
 
             case MemberRemoved(member, previousStatus) =>
               ctx.log.info("Member is Removed: {} after {}", member.address, previousStatus)
+
             case _: MemberEvent =>
-              ctx.log.info("unknown event") // ignore
+              ctx.log.info("unknown event1") // ignore
           }
         case _ =>
-          ctx.log.info("unknown event")
+          ctx.log.info("unknown event2")
       }
+      val members = Cluster(ctx.system).state.members
+      updateMembers(members)
 
       Behaviors.same
     }

@@ -10,12 +10,14 @@ class UserListView extends ListView[User] {
 
   def pinToTabPane(tabsData: ObservableSet[ChatTab], tabsContainer:TabPane): Unit = {
     getSelectionModel.selectedItemProperty.addListener((_, _, newValue) => {
-      val newChatTab = new ChatTab(newValue.name, WHISPER)
+      if (newValue != null) {
+        val newChatTab = new ChatTab(newValue.name, WHISPER)
 
-      tabsData.add(newChatTab)
-      tabsContainer.getTabs.filtered(_.getText == newChatTab.name).forEach(tab => {
-        tabsContainer.getSelectionModel.select(tab)
-      })
+        tabsData.add(newChatTab)
+        tabsContainer.getTabs.filtered(_.getText == newChatTab.name).forEach(tab => {
+          tabsContainer.getSelectionModel.select(tab)
+        })
+      }
     })
   }
 }
