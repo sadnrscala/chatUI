@@ -22,11 +22,10 @@ repositories {
 }
 
 
-// scala binary version for akka dependency
+// for akka
 def versions = [
         ScalaBinary: "2.13"
 ]
-
 
 dependencies {
     // Use Scala 2.13 in our library project
@@ -35,11 +34,17 @@ dependencies {
     // This dependency is used by the application.
     implementation 'com.google.guava:guava:30.0-jre'
 
-    // Akka cluster dependency
+    // akka
+   // implementation "com.typesafe.akka:akka-actor-typed_${versions.ScalaBinary}"
+
+
+    // akka cluster
     implementation platform("com.typesafe.akka:akka-bom_${versions.ScalaBinary}:2.6.14")
-    implementation "com.typesafe.akka:akka-cluster_${versions.ScalaBinary}"
-    // for pub/sub akka
-    implementation "com.typesafe.akka:akka-cluster-tools_${versions.ScalaBinary}"
+    implementation "com.typesafe.akka:akka-cluster-typed_${versions.ScalaBinary}"
+
+    // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
+    implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+
 
     // Use Scalatest for testing our library
     testImplementation 'junit:junit:4.13.1'
@@ -52,7 +57,7 @@ dependencies {
 
 application {
     // Define the main class for the application.
-    mainClass = 'chatUI.App'
+    mainClass = 'chatUI.Launcher'
 }
 
 javafx {

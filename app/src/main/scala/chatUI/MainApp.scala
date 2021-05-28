@@ -3,11 +3,13 @@
  */
 package chatUI
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+
+
+import akka.actor.typed.ActorSystem
 import chatUI.ActorUI.SetController
+import chatUI.App.{RootBehavior, config}
 import chatUI.model.{ChatChannel, Message, User}
 import chatUI.view.ChatController
-import com.typesafe.config.ConfigFactory
 import javafx.application.Application
 import javafx.collections.{FXCollections, ObservableList}
 import javafx.fxml.FXMLLoader
@@ -19,7 +21,11 @@ import scala.collection.mutable.HashMap
 
 
 
+
+
 class MainApp extends Application {
+
+
 
   private var _stage:Stage = _
   private var _appLayout:HBox = _
@@ -28,18 +34,6 @@ class MainApp extends Application {
   private val _channelsData:ObservableList[ChatChannel] = FXCollections.observableArrayList
 
 
-  // creating Actor Systems
-  private val _localActorSystem = ActorSystem("localSystem")
-  private var _clusterActorSystem: ActorSystem = ActorSystem("ChatUser",
-    ConfigFactory.load("application_cluster.conf"))
-
-  def localActorSystem: ActorSystem = _localActorSystem
-  def clusterActorSystem: ActorSystem = _clusterActorSystem
-  def clusterActorSystem_=(actorSystem: ActorSystem): Unit = _clusterActorSystem = actorSystem
-
-  // create actors
-  private val _actorUI:ActorRef = localActorSystem.actorOf(Props(classOf[ActorUI]), "actorUI")
-  def actorUI: ActorRef = _actorUI
 
 
   /**
@@ -60,8 +54,7 @@ class MainApp extends Application {
    * When GUI stop, terminate ActorSystems
    * */
   override def stop(): Unit = {
-    localActorSystem.terminate()
-    clusterActorSystem.terminate()
+    App.localSystem.terminate()
   }
 
   def initAppLayout(): Unit = {
@@ -73,14 +66,13 @@ class MainApp extends Application {
     val scene = new Scene(appLayout)
 
     val chatController:ChatController = loader.getController
-    actorUI ! SetController(chatController)
     chatController.mainApp = this
+    App.localSystem ! SetController(chatController)
+    val clusterActorSystem: ActorSystem[Nothing] = ActorSystem[Nothing](RootBehavior(), "ClusterSystem", config)
 
     stage.setScene(scene)
     stage.show()
 
-    usersData.add(new User("user 1"))
-    usersData.add(new User("user 2"))
 
     messagesData.addOne("Main", FXCollections.observableArrayList())
     messagesData("Main").add(new Message("privet", new User("asadasd")))
