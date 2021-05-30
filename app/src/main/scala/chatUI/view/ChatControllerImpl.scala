@@ -61,12 +61,20 @@ class ChatControllerImpl extends ChatController {
     }
 
     if (formValid) {
-      val address: Address = new Address("akka", "ChatPeer", host, port.toInt)
-      mainApp.actorSystem.terminate()
-      connectionErrorLabel.setText("Connection...")
-      connectionErrorLabel.setVisible(true)
-      mainApp.actorSystem = ActorSystem(ChatPeerGuardian(this, address), "ChatPeer",
-        ConfigFactory.load("application.cluster.conf"))
+
+      if (myAddress.getText == s"${host}:${port}") {
+        connectionErrorLabel.setText("You already connected to this network")
+        connectionErrorLabel.setVisible(true)
+      } else {
+        val address: Address = new Address("akka", "ChatPeer", host, port.toInt)
+        mainApp.actorSystem.terminate()
+        connectionErrorLabel.setText("Connection...")
+        connectionErrorLabel.setVisible(true)
+        mainApp.actorSystem = ActorSystem(ChatPeerGuardian(this, address), "ChatPeer",
+          ConfigFactory.load("application.cluster.conf"))
+      }
+
+
 
     } else {
       connectionErrorLabel.setText("Invalid host/port format")

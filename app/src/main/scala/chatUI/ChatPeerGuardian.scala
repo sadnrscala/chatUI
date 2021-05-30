@@ -38,7 +38,7 @@ object ChatPeerGuardian {
       cluster.manager ! Join(firstSeedAddress)
 
       val idKey = s"${cluster.selfMember.address.host.get}:${cluster.selfMember.address.port.get}"
-      println(idKey)
+      chatController.myAddress.setText(idKey)
       val selfServiceKey = ServiceKey[ChatCommand](idKey)
       ctx.system.receptionist ! Receptionist.Register(selfServiceKey, ctx.self)
 
@@ -65,9 +65,8 @@ object ChatPeerGuardian {
               case _ => //ignore
             }
 
-            val members = cluster.state.members
-
             Platform.runLater({() =>
+              val members = cluster.state.members
               val usersData = chatController.mainApp.usersData
               usersData.removeAll(usersData)
 

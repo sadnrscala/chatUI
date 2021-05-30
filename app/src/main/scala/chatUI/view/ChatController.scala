@@ -19,6 +19,7 @@ abstract class ChatController extends Initializable {
   @FXML protected var connectAddressTextField:TextField = _
   @FXML protected var connectPortTextField:TextField = _
   @FXML var connectionErrorLabel:Label = _
+  @FXML var myAddress:Label = _
 
   def mainApp: MainApp
   def mainApp_=(c: MainApp): Unit

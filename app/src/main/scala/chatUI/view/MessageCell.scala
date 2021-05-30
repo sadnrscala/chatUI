@@ -12,9 +12,11 @@ class MessageCell extends ListCell[Message] {
     var messageContent:String = null
     var messageCss:String = null
     var prompt:Label = null
+    getStyleClass.removeAll(getStyleClass)
 
     if (!empty && item != null) {
       messageContent = item.content
+      getStyleClass.add("message")
 
       if (item.direct) {
         prompt = new Label(s"You have new whisper from ${item.owner.name}: ")
@@ -28,7 +30,7 @@ class MessageCell extends ListCell[Message] {
     }
 
     setText(messageContent)
-    getStyleClass.removeAll(getStyleClass)
+
     getStyleClass.add(messageCss)
     setGraphic(prompt)
   }

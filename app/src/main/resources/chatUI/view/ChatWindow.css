@@ -1,6 +1,14 @@
 .root {
    // -fx-background: #555666;
 }
+
+.message {
+    -fx-padding:10px;
+    -fx-border-color: #ffffff #ffffff #999999 #ffffff;
+}
+.message:even {
+  //-fx-background-color:#eeeeee
+}
 .message-owner {
     -fx-text-fill: red;
 }

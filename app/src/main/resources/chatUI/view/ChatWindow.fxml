@@ -60,6 +60,8 @@
                               <RowConstraints vgrow="SOMETIMES" />
                               <RowConstraints vgrow="SOMETIMES" />
                               <RowConstraints vgrow="SOMETIMES" />
+                              <RowConstraints vgrow="SOMETIMES" />
+                              <RowConstraints vgrow="SOMETIMES" />
                            </rowConstraints>
                            <children>
                               <Label text="IP-addr" />
@@ -68,6 +70,8 @@
                               <TextField fx:id="connectPortTextField" maxWidth="50.0" promptText="3306" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                               <Button fx:id="connectButton" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#connectButtonOnAction" text="connect" GridPane.columnSpan="2" GridPane.rowIndex="2" GridPane.vgrow="ALWAYS" />
                               <Label fx:id="connectionErrorLabel" styleClass="label-error" text="Invalid host or port format" visible="false" GridPane.columnSpan="2" GridPane.rowIndex="3" />
+                              <Label GridPane.columnSpan="2" GridPane.rowIndex="4" text="Your address is:"/>
+                              <Label fx:id="myAddress" text="" GridPane.columnSpan="2" GridPane.rowIndex="5" />
                            </children>
                            <opaqueInsets>
                               <Insets />
