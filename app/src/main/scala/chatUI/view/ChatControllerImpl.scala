@@ -2,15 +2,13 @@ package chatUI.view
 
 import akka.actor.Address
 import akka.actor.typed.ActorSystem
-import chatUI.{ChatGuardian, MainApp}
-import chatUI.model.{ChatChannel, ChatTab, Message, TOPIC, User}
+import chatUI.ChatPeerGuardian.{LoadChatHistory, SendPrivateMessage, SendTopicMessage}
+import chatUI.model.{Message, SystemUser, User}
+import chatUI.{ChatPeerGuardian, MainApp}
 import com.typesafe.config.ConfigFactory
-import javafx.beans.property.{BooleanProperty, IntegerProperty, SimpleBooleanProperty, SimpleIntegerProperty, SimpleObjectProperty, SimpleStringProperty, StringProperty}
-import javafx.beans.value.{ChangeListener, ObservableBooleanValue, ObservableObjectValue}
-import javafx.collections.{FXCollections, ListChangeListener, ObservableSet, SetChangeListener}
+import javafx.beans.property.{SimpleStringProperty, StringProperty}
 import javafx.event.ActionEvent
 import javafx.fxml.FXML
-import javafx.scene.control.{ListView, Tab}
 import javafx.scene.input.{KeyCode, KeyEvent}
 
 import java.net.URL
@@ -19,10 +17,6 @@ import java.util.ResourceBundle
 
 
 class ChatControllerImpl extends ChatController {
-
-
-  private val _tabsData:ObservableSet[ChatTab] = FXCollections.observableSet()
-  def tabsData: ObservableSet[ChatTab] = _tabsData
 
   private val _connectionAddress:StringProperty = new SimpleStringProperty("")
   def connectionAddress: String = _connectionAddress.get
@@ -34,47 +28,17 @@ class ChatControllerImpl extends ChatController {
 
 
   @FXML
-  def testHandler(e: ActionEvent): Unit = {
-    //connectFormInvalid = false
-  }
-
-
-  @FXML
   override def initialize(location: URL, resources: ResourceBundle): Unit = {
 
     connectAddressTextField.textProperty().bindBidirectional(_connectionAddress)
     connectPortTextField.textProperty().bindBidirectional(_connectionPort)
-
-
-
-    usersContainer.pinToTabPane(tabsData, chatTabsContainer)
-
-    channelsContainer.setCellFactory(new ChannelCellFactory())
-    channelsContainer.getSelectionModel.selectedItemProperty.addListener((_, _, newValue) => {
-      val newChatTab = new ChatTab(newValue.name, TOPIC)
-      tabsData.add(newChatTab)
-      chatTabsContainer.getTabs.filtered(_.getText == newChatTab.name).forEach(tab => {
-        chatTabsContainer.getSelectionModel.select(tab)
-      })
-    })
-
-    testButton.setOnAction(testHandler)
+    usersContainer.setCellFactory(new UserCellFactory)
+    messagesContainer.setCellFactory(new MessageCellFactory)
   }
-
-
-  @FXML
-  def connectAddressTextFieldOnKeyReleased(e: KeyEvent): Unit = {
-  }
-
-  @FXML
-  def connectPortTextFieldOnKeyReleased(e: KeyEvent): Unit = {
-  }
-
 
 
   /**
    * connectButtonOnAction.
-   * <hr>
    * Handler for pressed connect button
    * */
   @FXML
@@ -84,7 +48,7 @@ class ChatControllerImpl extends ChatController {
     val host = connectionAddress.trim
     val port = connectionPort.trim
 
-    if ( ! host.matches(
+    if (!host.matches(
       "^" +
               "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}" +
               "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)" +
@@ -92,16 +56,20 @@ class ChatControllerImpl extends ChatController {
       formValid = false
     }
 
-    if ( ! port.matches("^\\d+$") || port.toInt < 0 || port.toInt > 65000) {
+    if (!port.matches("^\\d+$") || port.toInt < 0 || port.toInt > 65535) {
       formValid = false
     }
 
     if (formValid) {
-      println("connection")
-      val address: Address = new Address("akka", "ClusterChat", host, port.toInt)
-      mainApp.system.terminate()
-      mainApp.system = ActorSystem(ChatGuardian(this, address), "ClusterChat", ConfigFactory.load("application.cluster.conf"))
+      val address: Address = new Address("akka", "ChatPeer", host, port.toInt)
+      mainApp.actorSystem.terminate()
+      connectionErrorLabel.setText("Connection...")
+      connectionErrorLabel.setVisible(true)
+      mainApp.actorSystem = ActorSystem(ChatPeerGuardian(this, address), "ChatPeer",
+        ConfigFactory.load("application.cluster.conf"))
+
     } else {
+      connectionErrorLabel.setText("Invalid host/port format")
       connectionErrorLabel.setVisible(true)
     }
 
@@ -110,42 +78,42 @@ class ChatControllerImpl extends ChatController {
 
   /**
    * messageAreaKeyPressed.
-   * <hr>
    * Handler for user message area input<br>
    * send message to recipients if pressed SHIFT + ENTER
    * */
   @FXML
   def messageAreaKeyPressed(e: KeyEvent): Unit = {
     if (e.getCode == KeyCode.ENTER && e.isShiftDown) {
-      //actorChatClient ! NewChatMessage(DEFAULT_CHANNEL, messageInputArea.getText)
 
-      println(s"sending message to " +
-        s"${chatTabsContainer.getSelectionModel.selectedItemProperty().get().getText}" +
-        s"message: ${messageArea.getText}")
+      val userMessage = messageArea.getText.trim
+      messageArea.setText("") // clear user text area
 
-      // clear user text area
-      messageArea.setText("")
+      if (!userMessage.startsWith("/")) {
+        mainApp.actorSystem ! SendTopicMessage(userMessage)
+      } else {
+        // сообщения начинающиеся с / - это команды чата
+        val whisperRegexp = """(?s)^/w\s([^\s]+)\s(.+)""".r
+        if (whisperRegexp.matches(userMessage)) {
+            // приватное сообщение
+            val whisperRegexp(nick, msg) = userMessage
+            mainApp.messagesData.add(new Message(s"You send private message to ${nick}: ${msg}", new SystemUser))
+            mainApp.actorSystem ! SendPrivateMessage(msg, nick)
+        } else {
+          if (userMessage == "/?") {
+            mainApp.messagesData.add(new Message(
+              """List available commands:
+                |/? - show this help
+                |/w - send private message to user
+                | Usage: /w <nickname> <message>
+                | Example: /w 192.168.1.1:7777 Hello sadnr!
+                |""".stripMargin, new SystemUser))
+          } else {
+            mainApp.messagesData.add(new Message("Unknown command, type /? for help", new SystemUser))
+          }
+        }
+      }
     }
-
   }
-
-
-  @FXML
-  def joinToChannelButtonHandler(): Unit = {
-    val newChannel = new ChatChannel(joinToChannelInput.getText, 10);
-    joinToChannelInput.setText(null)
-
-    mainApp.channelsData.add(newChannel)
-    tabsData.add(new ChatTab(newChannel.name, TOPIC))
-
-    chatTabsContainer.getTabs.filtered(_.getText == newChannel.name).forEach(tab => {
-      chatTabsContainer.getSelectionModel.select(tab)
-    })
-  }
-
-
-
-
 
 
   override def mainApp: MainApp = _mainApp
@@ -153,35 +121,14 @@ class ChatControllerImpl extends ChatController {
     _mainApp = c
 
     usersContainer.setItems(mainApp.usersData)
-    channelsContainer.setItems(mainApp.channelsData)
+    messagesContainer.setItems(mainApp.messagesData)
 
-
-    tabsData.addListener(new SetChangeListener[ChatTab] {
-      override def onChanged(change: SetChangeListener.Change[_ <: ChatTab]): Unit = {
-        if (change.wasAdded) {
-          val newTab = new Tab(change.getElementAdded.name)
-          val newTabMessagesContainer = new ListView[Message]
-          newTabMessagesContainer.setCellFactory(new MessageCellFactory())
-          val newTabMessagesData = mainApp.messagesData("Main")
-          newTabMessagesContainer.setItems(newTabMessagesData)
-          newTab.setContent(newTabMessagesContainer)
-
-          chatTabsContainer.getTabs.add(newTab)
-        }
-        if (change.wasRemoved) {
-          chatTabsContainer.getTabs.removeIf(_.getText == change.getElementRemoved.name)
-        }
-      }
-    })
-
-    chatTabsContainer.getTabs.addListener(new ListChangeListener[Tab] {
-      override def onChanged(c: ListChangeListener.Change[_ <: Tab]): Unit = {
-        c.next
-        if (c.wasRemoved) {
-          c.getRemoved forEach(el => tabsData.removeIf(_.name == el.getText))
-        }
+    // При выборе пользователя в списке пользователей,
+    // устанавливает в поле ввода команду для написания ему личного сообщения
+    usersContainer.getSelectionModel.selectedItemProperty.addListener((_, oldValue, newValue) => {
+      if (newValue != null) {
+        messageArea.setText(s"/w ${newValue.name} ${messageArea.getText}")
       }
     })
   }
-
 }

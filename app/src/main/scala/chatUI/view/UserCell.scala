@@ -9,12 +9,9 @@ import javafx.util.Callback
 class UserCell extends ListCell[User] {
   override def updateItem(item: User, empty: Boolean): Unit = {
     super.updateItem(item, empty)
-    val index:Int = getIndex
     var name:String = null
-    if (item == null || empty) {
-
-    } else {
-      name = (index + 1 + ". " + item.name)
+    if (!empty && item != null) {
+      name = item.name
     }
 
     setText(name)

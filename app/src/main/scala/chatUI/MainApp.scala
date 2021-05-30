@@ -6,8 +6,8 @@ package chatUI
 
 
 import akka.actor.typed.ActorSystem
-
-import chatUI.model.{ChatChannel, Message, User}
+import chatUI.ChatPeerGuardian.ChatCommand
+import chatUI.model.{Message, User}
 import chatUI.view.ChatController
 import com.typesafe.config.ConfigFactory
 import javafx.application.Application
@@ -17,29 +17,20 @@ import javafx.scene.layout.HBox
 import javafx.scene.Scene
 import javafx.stage.Stage
 
-import scala.collection.mutable.HashMap
-
-
-
 
 
 class MainApp extends Application {
 
-
-
   private var _stage:Stage = _
   private var _appLayout:HBox = _
-  private var _messagesData:HashMap[String, ObservableList[Message]] = new HashMap[String, ObservableList[Message]]()
+  private val _messagesData:ObservableList[Message] = FXCollections.observableArrayList
   private val _usersData:ObservableList[User] = FXCollections.observableArrayList
-  private val _channelsData:ObservableList[ChatChannel] = FXCollections.observableArrayList
-
-  var system:ActorSystem[ChatGuardian.ChatCommand] = _
 
 
+  var actorSystem: ActorSystem[ChatCommand] = _
 
   /**
    * start.
-   * <hr>
    * GUI start here
    * */
   override def start(primaryStage: Stage): Unit = {
@@ -51,12 +42,12 @@ class MainApp extends Application {
   }
 
   /** stop.
-   * <hr>
    * When GUI stop, terminate ActorSystems
    * */
   override def stop(): Unit = {
-    system.terminate()
+    actorSystem.terminate()
   }
+
 
   def initAppLayout(): Unit = {
 
@@ -68,22 +59,18 @@ class MainApp extends Application {
 
     val chatController:ChatController = loader.getController
     chatController.mainApp = this
-    system = ActorSystem(ChatGuardian(chatController), "ClusterChat", ConfigFactory.load("application.cluster.conf"))
-
+    actorSystem = ActorSystem(ChatPeerGuardian(chatController),
+      "ChatPeer",
+      ConfigFactory.load("application.cluster.conf"))
 
     stage.setScene(scene)
     stage.show()
-
-
-    messagesData.addOne("Main", FXCollections.observableArrayList())
-    messagesData("Main").add(new Message("privet", new User("asadasd")))
   }
 
 
   // setters/getters
   def usersData: ObservableList[User] = _usersData
-  def messagesData: HashMap[String, ObservableList[Message]] = _messagesData
-  def channelsData: ObservableList[ChatChannel] = _channelsData
+  def messagesData: ObservableList[Message] = _messagesData
 
   def appLayout: HBox = _appLayout
   def appLayout_=(el:HBox) = _appLayout = el
@@ -91,3 +78,4 @@ class MainApp extends Application {
   def stage: Stage = _stage
   def stage_= (s:Stage): Unit = _stage = s
 }
+

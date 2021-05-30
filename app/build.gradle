@@ -44,7 +44,7 @@ dependencies {
 
     // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
-
+    implementation "com.typesafe.akka:akka-serialization-jackson_${versions.ScalaBinary}"
 
     // Use Scalatest for testing our library
     testImplementation 'junit:junit:4.13.1'

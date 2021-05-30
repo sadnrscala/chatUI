@@ -1,19 +1,14 @@
 package chatUI.model
 
-import javafx.beans.property.{ObjectProperty, SimpleObjectProperty, SimpleStringProperty, StringProperty}
 
-class Message(_content:String, _owner:User) {
+class Message(var _content:String, var _owner:User, var _direct: Boolean = false) {
 
-  private val __owner:ObjectProperty[User] = new SimpleObjectProperty[User](_owner)
-  private val __content:StringProperty = new SimpleStringProperty(_content)
+  def content:String = _content
+  def owner:User = _owner
+  def direct:Boolean = _direct
 
-  def content:String = __content.get
-  def owner:User = __owner.get
+  def content_=(newContent:String): Unit = _content = newContent
+  def owner_=(newOwner: User): Unit = _owner = newOwner
+  def direct_=(newValue: Boolean): Unit = _direct = newValue
 
-  def content_=(newContent:String) = __content.set(newContent)
-  def owner_=(newOwner:User): Unit = __owner.set(newOwner)
-
-
-  def contentProperty:StringProperty = __content
-  def ownerProperty:ObjectProperty[User] = __owner
 }

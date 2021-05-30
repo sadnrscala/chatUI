@@ -1,8 +1,14 @@
 .root {
    // -fx-background: #555666;
 }
-.message__owner {
+.message-owner {
     -fx-text-fill: red;
+}
+.message-whisper {
+    -fx-text-fill: green;
+}
+.message-system {
+    -fx-text-fill: #666666;
 }
 .label-error {
     -fx-text-fill: #EE5454;

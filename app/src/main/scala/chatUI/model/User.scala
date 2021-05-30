@@ -1,15 +1,14 @@
 package chatUI.model
 
-import javafx.beans.property.{SimpleStringProperty, StringProperty}
 
-class User(_name:String) {
+class User(var _name:String){
 
-  private val __name:StringProperty = new SimpleStringProperty(_name)
+  def name:String = _name
+  def name_=(newName:String) = _name = newName
 
-  def name:String = __name.get
-
-  def name_=(newName:String) = __name.set(newName)
-
-  def nameProperty:StringProperty = __name
-
+  override def toString: String = {
+    name
+  }
 }
+
+class SystemUser extends User("system")
