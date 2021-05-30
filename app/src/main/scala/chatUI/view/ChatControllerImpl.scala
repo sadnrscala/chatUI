@@ -75,7 +75,6 @@ class ChatControllerImpl extends ChatController {
       }
 
 
-
     } else {
       connectionErrorLabel.setText("Invalid host/port format")
       connectionErrorLabel.setVisible(true)

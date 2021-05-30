@@ -11,7 +11,7 @@ import akka.cluster.typed.{Cluster, Join, Subscribe}
 import chatUI.model.{Message, SystemUser, User}
 import chatUI.view.ChatController
 import javafx.application.Platform
-import javafx.collections.FXCollections
+
 
 
 object ChatPeerGuardian {
