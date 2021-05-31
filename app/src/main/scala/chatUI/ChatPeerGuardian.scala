@@ -8,7 +8,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.ClusterEvent.{MemberEvent, MemberUp}
 import akka.cluster.MemberStatus
 import akka.cluster.typed.{Cluster, Join, Subscribe}
-import chatUI.model.{Message, SystemUser, User}
+import chatUI.model.{Message, PrivateTab, SystemUser, User}
 import chatUI.view.ChatController
 import javafx.application.Platform
 import javafx.collections.FXCollections
@@ -99,22 +99,37 @@ object ChatPeerGuardian {
               if (message.direct) {
                 // "private" message
                 // create tab for it, if not exists
+
+                // create messages data container
                 val messagesData = chatController.mainApp.allMessagesData.getOrElse(message.owner.name, {
                   chatController.mainApp.allMessagesData.addOne(message.owner.name,FXCollections.observableArrayList[Message])
                   chatController.mainApp.allMessagesData(message.owner.name)
                 })
                 messagesData.add(message)
 
-                val whisperTab = chatController.tabsContainer.getTabs.filtered(_.getUserData == message.owner.name)
+                val whisperTab = chatController.tabsContainer.getTabs
+                  .filtered(_.getUserData != null)
+                  .filtered(_.getUserData.asInstanceOf[PrivateTab].name == message.owner.name)
                 val isTabExist = whisperTab.size() > 0
+
+
                 if (!isTabExist) {
 
                   //create tab
                   val newTab = chatController.createWhisperTab(message.owner.nickName, message.owner.name, messagesData)
+                  val tabData = newTab.getUserData.asInstanceOf[PrivateTab]
+                  val newLabel = s"${tabData.nickWithWho} (${tabData.unread})"
+                  newTab.setText(newLabel)
                   chatController.tabsContainer.getTabs.add(newTab)
-                  //chatController.tabsContainer.getSelectionModel.select(newTab)
+
                 } else {
-                  //chatController.tabsContainer.getSelectionModel.select(whisperTab.get(0))
+
+                  if (!whisperTab.get(0).isSelected) {
+                    val tabData = whisperTab.get(0).getUserData.asInstanceOf[PrivateTab]
+                    tabData.unread = tabData.unread + 1
+                    val newLabel = s"${tabData.nickWithWho} (${tabData.unread})"
+                    whisperTab.get(0).setText(newLabel)
+                  }
                 }
 
               } else {

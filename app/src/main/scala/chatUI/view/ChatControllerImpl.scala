@@ -3,7 +3,7 @@ package chatUI.view
 import akka.actor.Address
 import akka.actor.typed.ActorSystem
 import chatUI.ChatPeerGuardian.{LoadChatHistory, SendPrivateMessage, SendTopicMessage}
-import chatUI.model.{Message, SystemUser, User}
+import chatUI.model.{Message, PrivateTab, SystemUser, User}
 import chatUI.{ChatPeerGuardian, MainApp}
 import com.typesafe.config.ConfigFactory
 import javafx.beans.property.{SimpleStringProperty, StringProperty}
@@ -111,13 +111,13 @@ class ChatControllerImpl extends ChatController {
       } else {
         // private message
 
-        val messagesData = mainApp.allMessagesData.getOrElse(recipient.toString, {
-          mainApp.allMessagesData.addOne(recipient.toString, FXCollections.observableArrayList[Message])
-          mainApp.allMessagesData(recipient.toString)
+        val messagesData = mainApp.allMessagesData.getOrElse(recipient.asInstanceOf[PrivateTab].name, {
+          mainApp.allMessagesData.addOne(recipient.asInstanceOf[PrivateTab].name, FXCollections.observableArrayList[Message])
+          mainApp.allMessagesData(recipient.asInstanceOf[PrivateTab].name)
         })
 
-        messagesData.add(new Message(s"You send private message to ${recipient}: ${userMessage}", new SystemUser))
-        mainApp.actorSystem ! SendPrivateMessage(userMessage, recipient.toString)
+        messagesData.add(new Message(s"You send private message: ${userMessage}", new SystemUser))
+        mainApp.actorSystem ! SendPrivateMessage(userMessage, recipient.asInstanceOf[PrivateTab].name)
       }
 
     }
@@ -138,7 +138,9 @@ class ChatControllerImpl extends ChatController {
     usersContainer.getSelectionModel.selectedItemProperty.addListener((_, oldValue, newValue) => {
 
       if (newValue != null) {
-        val whisperTab = tabsContainer.getTabs.filtered(_.getUserData == newValue.name)
+        val whisperTab = tabsContainer.getTabs
+          .filtered(_.getUserData != null)
+          .filtered(_.getUserData.asInstanceOf[PrivateTab].name == newValue.name)
         val isTabExist = whisperTab.size() > 0
         if (!isTabExist) {
 
@@ -157,13 +159,25 @@ class ChatControllerImpl extends ChatController {
         //messageArea.setText(s"/w ${newValue.name} ${messageArea.getText}")
       }
     })
+
+    tabsContainer.getSelectionModel.selectedItemProperty()addListener((_, oldValue, newValue) => {
+      if (newValue != null) {
+        if (newValue.getUserData != null) {
+          val tabData = newValue.getUserData.asInstanceOf[PrivateTab]
+          tabData.unread = 0
+          newValue.setText(tabData.nickWithWho)
+        }
+      }
+    })
   }
   override def createWhisperTab(nickNameWithWho: String,
                                realName: String,
                                messagesData: ObservableList[Message]): Tab = {
     //create tab
     val newTab:Tab = new Tab(nickNameWithWho)
-    newTab.setUserData(realName)
+
+    newTab.setUserData(new PrivateTab(nickNameWithWho, realName))
+
 
     //create messages container
     val newMessagesContainer = new ListView[Message]
