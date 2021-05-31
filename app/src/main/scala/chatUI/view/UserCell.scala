@@ -11,7 +11,7 @@ class UserCell extends ListCell[User] {
     super.updateItem(item, empty)
     var name:String = null
     if (!empty && item != null) {
-      name = item.name
+      name = item.nickName
     }
 
     setText(name)

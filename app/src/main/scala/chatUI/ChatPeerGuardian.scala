@@ -11,6 +11,7 @@ import akka.cluster.typed.{Cluster, Join, Subscribe}
 import chatUI.model.{Message, SystemUser, User}
 import chatUI.view.ChatController
 import javafx.application.Platform
+import javafx.collections.FXCollections
 
 
 
@@ -26,11 +27,14 @@ object ChatPeerGuardian {
 
   private final case class MemberChange(event: MemberEvent) extends ChatCommand
 
-  def apply(chatController: ChatController, seed: Address = null): Behavior[ChatCommand] =
+  def apply(chatController: ChatController, seed: Address = null, myNickName: String): Behavior[ChatCommand] =
     Behaviors.setup[ChatCommand] { ctx =>
 
       //# setup
       val cluster = Cluster(ctx.system)
+      //##
+
+
       val firstSeedAddress = {
         if (seed != null) seed else cluster.selfMember.address
       }
@@ -38,7 +42,10 @@ object ChatPeerGuardian {
       cluster.manager ! Join(firstSeedAddress)
 
       val idKey = s"${cluster.selfMember.address.host.get}:${cluster.selfMember.address.port.get}"
-      chatController.myAddress.setText(idKey)
+      Platform.runLater(() => {
+        chatController.myAddress.setText(idKey)
+      })
+
       val selfServiceKey = ServiceKey[ChatCommand](idKey)
       ctx.system.receptionist ! Receptionist.Register(selfServiceKey, ctx.self)
 
@@ -48,7 +55,10 @@ object ChatPeerGuardian {
       val topic = ctx.spawn(Topic[ReceiveMessage]("default"), "topic-1")
       topic ! Topic.Subscribe(ctx.self)
 
-      val currentUser = new User(s"${cluster.selfMember.address.host.get}:${cluster.selfMember.address.port.get}")
+      val currentUser = new User(
+        s"${cluster.selfMember.address.host.get}:${cluster.selfMember.address.port.get}",
+        myNickName
+      )
       //# setup
 
       def chatBehavior(history: List[Message] = List()): Behavior[ChatCommand] =
@@ -73,7 +83,7 @@ object ChatPeerGuardian {
               members filter { member =>
                 member.status == MemberStatus.Up || member.status == MemberStatus.Joining
               } foreach { m =>
-                usersData.add(new User(s"${m.address.host.get}:${m.address.port.get}"))
+                usersData.add(new User(s"${m.address.host.get}:${m.address.port.get}", m.roles.head))
               }
             })
 
@@ -85,8 +95,32 @@ object ChatPeerGuardian {
           case ReceiveMessage(message) =>
 
             Platform.runLater({() =>
-              val messagesData = chatController.mainApp.messagesData
-              messagesData.add(message)
+
+              if (message.direct) {
+                // "private" message
+                // create tab for it, if not exists
+                val messagesData = chatController.mainApp.allMessagesData.getOrElse(message.owner.name, {
+                  chatController.mainApp.allMessagesData.addOne(message.owner.name,FXCollections.observableArrayList[Message])
+                  chatController.mainApp.allMessagesData(message.owner.name)
+                })
+                messagesData.add(message)
+
+                val whisperTab = chatController.tabsContainer.getTabs.filtered(_.getUserData == message.owner.name)
+                val isTabExist = whisperTab.size() > 0
+                if (!isTabExist) {
+
+                  //create tab
+                  val newTab = chatController.createWhisperTab(message.owner.nickName, message.owner.name, messagesData)
+                  chatController.tabsContainer.getTabs.add(newTab)
+                  //chatController.tabsContainer.getSelectionModel.select(newTab)
+                } else {
+                  //chatController.tabsContainer.getSelectionModel.select(whisperTab.get(0))
+                }
+
+              } else {
+                val messagesData = chatController.mainApp.allMessagesData("main")
+                messagesData.add(message)
+              }
             })
 
             if (!message.direct && !message.owner.isInstanceOf[SystemUser]) {
@@ -103,17 +137,18 @@ object ChatPeerGuardian {
             Behaviors.same
 
           case RequestChatHistory(replyTo) =>
-            println(history)
+           // println(history)
             replyTo ! ResponseChatHistory(history)
             Behaviors.same
-          case ResponseChatHistory(history) =>
+          case ResponseChatHistory(newHistory) =>
             Platform.runLater(() => {
-              val messages = chatController.mainApp.messagesData
+              val messages = chatController.mainApp.allMessagesData("main")
               messages.removeAll(messages)
-              messages.addAll(history.reverse:_*)
+              messages.addAll(newHistory.reverse:_*)
             })
 
-            Behaviors.same
+            chatBehavior(newHistory)
+            //Behaviors.same
           case _ =>
             println("unknown message")
             Behaviors.same

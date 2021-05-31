@@ -8,7 +8,7 @@ package chatUI
 import akka.actor.typed.ActorSystem
 import chatUI.ChatPeerGuardian.ChatCommand
 import chatUI.model.{Message, User}
-import chatUI.view.ChatController
+import chatUI.view.{ChatController, LoginController}
 import com.typesafe.config.ConfigFactory
 import javafx.application.Application
 import javafx.collections.{FXCollections, ObservableList}
@@ -16,6 +16,10 @@ import javafx.fxml.FXMLLoader
 import javafx.scene.layout.HBox
 import javafx.scene.Scene
 import javafx.stage.Stage
+
+import scala.collection.mutable.HashMap
+
+
 
 
 
@@ -25,6 +29,10 @@ class MainApp extends Application {
   private var _appLayout:HBox = _
   private val _messagesData:ObservableList[Message] = FXCollections.observableArrayList
   private val _usersData:ObservableList[User] = FXCollections.observableArrayList
+  private var _myNickName: String = ""
+
+  private var _allMessagesData:HashMap[String, ObservableList[Message]]
+    = HashMap(("main", FXCollections.observableArrayList[Message]))
 
 
   var actorSystem: ActorSystem[ChatCommand] = _
@@ -38,18 +46,21 @@ class MainApp extends Application {
     stage = primaryStage
     stage.setTitle("p2p chat")
 
-    initAppLayout()
+    //initAppLayout()
+    initLoginWindow()
   }
 
   /** stop.
    * When GUI stop, terminate ActorSystems
    * */
   override def stop(): Unit = {
-    actorSystem.terminate()
+    if (actorSystem != null) {
+      actorSystem.terminate()
+    }
   }
 
 
-  def initAppLayout(): Unit = {
+  def initChatWindow(): Unit = {
 
     val loader = new FXMLLoader()
     loader.setLocation(getClass.getResource("view/ChatWindow.fxml"))
@@ -59,9 +70,30 @@ class MainApp extends Application {
 
     val chatController:ChatController = loader.getController
     chatController.mainApp = this
-    actorSystem = ActorSystem(ChatPeerGuardian(chatController),
-      "ChatPeer",
-      ConfigFactory.load("application.cluster.conf"))
+
+
+    val config = ConfigFactory.parseString(s"""
+      akka.cluster.roles=[${myNickName}]
+      """).withFallback(ConfigFactory.load("application.cluster.conf"))
+
+    actorSystem = ActorSystem(ChatPeerGuardian(chatController, myNickName = this.myNickName),
+      "ChatPeer", config)
+
+
+
+
+    stage.setScene(scene)
+    stage.show()
+  }
+
+  def initLoginWindow(): Unit = {
+    val loader = new FXMLLoader()
+    loader.setLocation(getClass.getResource("view/Login.fxml"))
+    val loginLayout:HBox = loader.load
+    val scene = new Scene(loginLayout)
+
+    val loginController:LoginController = loader.getController
+    loginController.mainApp = this
 
     stage.setScene(scene)
     stage.show()
@@ -72,10 +104,18 @@ class MainApp extends Application {
   def usersData: ObservableList[User] = _usersData
   def messagesData: ObservableList[Message] = _messagesData
 
+  def allMessagesData:HashMap[String, ObservableList[Message]] = _allMessagesData
+
+
+  def myNickName: String = _myNickName
+  def myNickName_=(newNickName: String): Unit = _myNickName = newNickName
+
   def appLayout: HBox = _appLayout
   def appLayout_=(el:HBox) = _appLayout = el
 
   def stage: Stage = _stage
   def stage_= (s:Stage): Unit = _stage = s
+
+
 }
 

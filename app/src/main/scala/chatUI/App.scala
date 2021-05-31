@@ -10,3 +10,6 @@ object App {
     launch(classOf[MainApp])
   }
 }
+
+
+// tab prinyditelno otkrivaetsa

@@ -7,9 +7,12 @@ import chatUI.model.{Message, SystemUser, User}
 import chatUI.{ChatPeerGuardian, MainApp}
 import com.typesafe.config.ConfigFactory
 import javafx.beans.property.{SimpleStringProperty, StringProperty}
+import javafx.collections.{FXCollections, ObservableList}
 import javafx.event.ActionEvent
 import javafx.fxml.FXML
+import javafx.scene.control.{ListView, Tab}
 import javafx.scene.input.{KeyCode, KeyEvent}
+import org.w3c.dom.events.MouseEvent
 
 import java.net.URL
 import java.util.ResourceBundle
@@ -70,8 +73,13 @@ class ChatControllerImpl extends ChatController {
         mainApp.actorSystem.terminate()
         connectionErrorLabel.setText("Connection...")
         connectionErrorLabel.setVisible(true)
-        mainApp.actorSystem = ActorSystem(ChatPeerGuardian(this, address), "ChatPeer",
-          ConfigFactory.load("application.cluster.conf"))
+
+        val config = ConfigFactory.parseString(s"""
+      akka.cluster.roles=[${mainApp.myNickName}]
+      """).withFallback(ConfigFactory.load("application.cluster.conf"))
+
+        mainApp.actorSystem = ActorSystem(ChatPeerGuardian(this, address, mainApp.myNickName), "ChatPeer",
+          config)
       }
 
 
@@ -95,47 +103,76 @@ class ChatControllerImpl extends ChatController {
       val userMessage = messageArea.getText.trim
       messageArea.setText("") // clear user text area
 
-      if (!userMessage.startsWith("/")) {
+      val selectedTab = tabsContainer.getSelectionModel.getSelectedItem
+      val recipient = selectedTab.getUserData
+      if (recipient == null) {
+        // message to main channel
         mainApp.actorSystem ! SendTopicMessage(userMessage)
       } else {
-        // сообщения начинающиеся с / - это команды чата
-        val whisperRegexp = """(?s)^/w\s([^\s]+)\s(.+)""".r
-        if (whisperRegexp.matches(userMessage)) {
-            // приватное сообщение
-            val whisperRegexp(nick, msg) = userMessage
-            mainApp.messagesData.add(new Message(s"You send private message to ${nick}: ${msg}", new SystemUser))
-            mainApp.actorSystem ! SendPrivateMessage(msg, nick)
-        } else {
-          if (userMessage == "/?") {
-            mainApp.messagesData.add(new Message(
-              """List available commands:
-                |/? - show this help
-                |/w - send private message to user
-                | Usage: /w <nickname> <message>
-                | Example: /w 192.168.1.1:7777 Hello sadnr!
-                |""".stripMargin, new SystemUser))
-          } else {
-            mainApp.messagesData.add(new Message("Unknown command, type /? for help", new SystemUser))
-          }
-        }
+        // private message
+
+        val messagesData = mainApp.allMessagesData.getOrElse(recipient.toString, {
+          mainApp.allMessagesData.addOne(recipient.toString, FXCollections.observableArrayList[Message])
+          mainApp.allMessagesData(recipient.toString)
+        })
+
+        messagesData.add(new Message(s"You send private message to ${recipient}: ${userMessage}", new SystemUser))
+        mainApp.actorSystem ! SendPrivateMessage(userMessage, recipient.toString)
       }
+
     }
   }
-
 
   override def mainApp: MainApp = _mainApp
   override def mainApp_=(c:MainApp): Unit = {
     _mainApp = c
 
     usersContainer.setItems(mainApp.usersData)
-    messagesContainer.setItems(mainApp.messagesData)
+    //messagesContainer.setItems(mainApp.messagesData)
+    messagesContainer.setItems(mainApp.allMessagesData("main"))
 
     // При выборе пользователя в списке пользователей,
     // устанавливает в поле ввода команду для написания ему личного сообщения
+
+
     usersContainer.getSelectionModel.selectedItemProperty.addListener((_, oldValue, newValue) => {
+
       if (newValue != null) {
-        messageArea.setText(s"/w ${newValue.name} ${messageArea.getText}")
+        val whisperTab = tabsContainer.getTabs.filtered(_.getUserData == newValue.name)
+        val isTabExist = whisperTab.size() > 0
+        if (!isTabExist) {
+
+          val messagesData = mainApp.allMessagesData.getOrElse(newValue.name, {
+            mainApp.allMessagesData.addOne(newValue.name,FXCollections.observableArrayList[Message])
+            mainApp.allMessagesData(newValue.name)
+          })
+          //create tab
+          val newTab = createWhisperTab(newValue.nickName, newValue.name, messagesData)
+
+          tabsContainer.getTabs.add(newTab)
+          tabsContainer.getSelectionModel.select(newTab)
+        } else {
+          tabsContainer.getSelectionModel.select(whisperTab.get(0))
+        }
+        //messageArea.setText(s"/w ${newValue.name} ${messageArea.getText}")
       }
     })
+  }
+  override def createWhisperTab(nickNameWithWho: String,
+                               realName: String,
+                               messagesData: ObservableList[Message]): Tab = {
+    //create tab
+    val newTab:Tab = new Tab(nickNameWithWho)
+    newTab.setUserData(realName)
+
+    //create messages container
+    val newMessagesContainer = new ListView[Message]
+    newMessagesContainer.setCellFactory(new MessageCellFactory)
+
+    // pin messages data to listview in tab
+    newMessagesContainer.setItems(messagesData)
+    newTab.setContent(newMessagesContainer)
+
+    newTab
   }
 }

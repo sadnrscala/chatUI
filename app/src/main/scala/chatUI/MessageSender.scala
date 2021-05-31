@@ -19,7 +19,10 @@ object MessageSender {
     Behaviors.receiveMessage[MessageSenderCommand] {
       case ListingResponse(RecipientKey.Listing(listing)) =>
         if (listing.size < 1) {
-          parent ! ReceiveMessage(new Message("receiver offline", new SystemUser))
+          parent ! ReceiveMessage(new Message(
+            "receiver offline",
+            new SystemUser(recipientKey, "offline"),
+            true))
         } else {
           listing.foreach { recipient =>
             recipient ! ReceiveMessage(new Message(contentMessage, currentUser, true))

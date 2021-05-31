@@ -18,13 +18,15 @@ class MessageCell extends ListCell[Message] {
       messageContent = item.content
       getStyleClass.add("message")
 
-      if (item.direct) {
-        prompt = new Label(s"You have new whisper from ${item.owner.name}: ")
-        prompt.getStyleClass.add("message-whisper")
-      } else if (item.owner.isInstanceOf[SystemUser]) {
+      if(item.owner.isInstanceOf[SystemUser]) {
         messageCss = "message-system"
+      } else if (item.direct) {
+        prompt = new Label(s"You have new whisper from ${item.owner.nickName}: ")
+        prompt.getStyleClass.add("message-whisper")
+
       } else {
-        prompt = new Label(s"${item.owner.name}: ")
+
+        prompt = new Label(s"${item.owner.nickName}: ")
         prompt.getStyleClass.add("message-owner")
       }
     }
