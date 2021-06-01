@@ -25,16 +25,36 @@ import scala.collection.mutable.HashMap
 
 class MainApp extends Application {
 
+  /**
+   * GUI stage.
+   * */
   private var _stage:Stage = _
-  private var _appLayout:HBox = _
-  private val _messagesData:ObservableList[Message] = FXCollections.observableArrayList
+
+  /**
+   * usersData.
+   * store list of chat users, for display in listview
+   * */
   private val _usersData:ObservableList[User] = FXCollections.observableArrayList
+
+  /**
+   * myNickName.
+   * taken from LoginWindow
+   * */
   private var _myNickName: String = ""
 
+  /**
+   * allMessagesData.
+   * key-value store of messages
+   * where key - name of tab (like "main_channel" or PM with other user)
+   * and value - Observable list with messages associated with key
+   * */
   private var _allMessagesData:HashMap[String, ObservableList[Message]]
     = HashMap(("main", FXCollections.observableArrayList[Message]))
 
-
+  /**
+   * actorSystem.
+   * p2p communication via akka cluster actor system
+   * */
   var actorSystem: ActorSystem[ChatCommand] = _
 
   /**
@@ -46,7 +66,6 @@ class MainApp extends Application {
     stage = primaryStage
     stage.setTitle("p2p chat")
 
-    //initAppLayout()
     initLoginWindow()
   }
 
@@ -59,14 +78,17 @@ class MainApp extends Application {
     }
   }
 
-
+  /**
+   * initChatWindow.
+   * configure and start chat window
+   * */
   def initChatWindow(): Unit = {
 
     val loader = new FXMLLoader()
     loader.setLocation(getClass.getResource("view/ChatWindow.fxml"))
 
-    appLayout = loader.load
-    val scene = new Scene(appLayout)
+    val chatWindowLayout:HBox = loader.load
+    val scene = new Scene(chatWindowLayout)
 
     val chatController:ChatController = loader.getController
     chatController.mainApp = this
@@ -79,13 +101,15 @@ class MainApp extends Application {
     actorSystem = ActorSystem(ChatPeerGuardian(chatController, myNickName = this.myNickName),
       "ChatPeer", config)
 
-
-
-
     stage.setScene(scene)
     stage.show()
   }
 
+  /**
+   * initLoginWindow.
+   * configure and start login window
+   * login window ask username, and when got it, start chat window
+   * */
   def initLoginWindow(): Unit = {
     val loader = new FXMLLoader()
     loader.setLocation(getClass.getResource("view/Login.fxml"))
@@ -102,20 +126,13 @@ class MainApp extends Application {
 
   // setters/getters
   def usersData: ObservableList[User] = _usersData
-  def messagesData: ObservableList[Message] = _messagesData
-
   def allMessagesData:HashMap[String, ObservableList[Message]] = _allMessagesData
-
 
   def myNickName: String = _myNickName
   def myNickName_=(newNickName: String): Unit = _myNickName = newNickName
 
-  def appLayout: HBox = _appLayout
-  def appLayout_=(el:HBox) = _appLayout = el
-
   def stage: Stage = _stage
   def stage_= (s:Stage): Unit = _stage = s
-
 
 }
 
