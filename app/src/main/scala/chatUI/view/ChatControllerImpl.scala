@@ -181,6 +181,7 @@ class ChatControllerImpl extends ChatController {
 
     //create messages container
     val newMessagesContainer = new ListView[Message]
+    newMessagesContainer.getStyleClass.add("messagesContainer")
     newMessagesContainer.setCellFactory(new MessageCellFactory)
 
     // pin messages data to listview in tab

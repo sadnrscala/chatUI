@@ -28,7 +28,7 @@
                   <content>
                     <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                            <children>
-                              <ListView fx:id="messagesContainer" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+                              <ListView styleClass="messagesContainer" fx:id="messagesContainer" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
                            </children>
                         </AnchorPane>
                   </content>
@@ -61,7 +61,7 @@
       </VBox>
       <VBox prefWidth="260.0">
          <children>
-            <TitledPane animated="false" text="Settings">
+            <TitledPane animated="false" text="Settings" styleClass="pane-settings">
                <content>
                   <VBox spacing="10.0">
                      <children>
@@ -101,7 +101,7 @@
                   <VBox maxHeight="1.7976931348623157E308">
                      <children>
                         <!--<UserListView fx:id="usersContainer" maxHeight="1.7976931348623157E308" VBox.vgrow="ALWAYS"/>-->
-                        <ListView fx:id="usersContainer" maxHeight="1.7976931348623157E308" VBox.vgrow="ALWAYS" />
+                        <ListView styleClass="usersContainer" fx:id="usersContainer" maxHeight="1.7976931348623157E308" VBox.vgrow="ALWAYS" />
                      </children>
 
                   </VBox>

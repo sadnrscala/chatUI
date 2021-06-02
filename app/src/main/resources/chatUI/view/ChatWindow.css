@@ -1,23 +1,65 @@
 .root {
-   // -fx-background: #555666;
+    -fx-background: #555666;
 }
 
 .message {
     -fx-padding:10px;
-    -fx-border-color: #ffffff #ffffff #999999 #ffffff;
+    -fx-border-color: #444555 #444555 #999999 #444555;
 }
 .message:even {
   //-fx-background-color:#eeeeee
 }
 .message-owner {
-    -fx-text-fill: red;
+    -fx-text-fill: white;
 }
 .message-whisper {
     -fx-text-fill: green;
 }
 .message-system {
-    -fx-text-fill: #666666;
+    -fx-text-fill: white;
 }
 .label-error {
     -fx-text-fill: #EE5454;
+}
+
+// TiledPanes
+TitledPane {
+    -fx-text-fill: white;
+    -fx-border-color: #43444d #43444d #999999 #43444d;
+}
+
+TitledPane > .title {
+    -fx-background-radius: 0;
+    -fx-background-color: #43444d;
+    //-fx-background-color: linear-gradient(#43444d, #000000);
+
+}
+TitledPane > .content {
+    -fx-border-color: #43444d;
+}
+// TiledPanes end
+
+.usersContainer {
+    -fx-background-radius:0;
+    -fx-background-color: #555666;
+}
+.usersContainer > .list-view {
+
+}
+.usersContainer > .virtual-flow > .clipped-container > .sheet > .cell.indexed-cell.list-cell {
+    -fx-background-color: #555666;
+    -fx-text-fill: white;
+}
+.usersContainer > .virtual-flow > .clipped-container > .sheet > .cell.indexed-cell.list-cell:selected {
+    -fx-background-color: #666777;
+}
+
+
+.messagesContainer {
+    -fx-background-radius:0;
+    -fx-background-color: #444555;
+}
+.messagesContainer > .virtual-flow > .clipped-container > .sheet > .cell.indexed-cell.list-cell {
+    -fx-background-color: #444555;
+    -fx-text-fill: white;
 }
